@@ -62,3 +62,39 @@ public class HeatMapGenericVisual : MonoBehaviour
         mesh.triangles = triangles;
     }
 }
+
+
+public class HeatMapGridObject
+{
+    public const int MAX = 100;
+    public const int MIN = 0;
+
+    private Grid<HeatMapGridObject> grid;
+    int x;
+    int y;
+    public int value;
+
+    public HeatMapGridObject(Grid<HeatMapGridObject> grid, int x, int y)
+    {
+        this.grid = grid;
+        this.x = x;
+        this.y = y;
+    }
+
+    public void AddValue(int addValue)
+    {
+        value += addValue;
+        value = Mathf.Clamp(value, MIN, MAX);
+        grid.TriggerGridObjectChanged(x, y);
+    }
+
+    public float GetValueNormalized()
+    {
+        return (float)value / MAX;
+    }
+
+    public override string ToString()
+    {
+        return value.ToString();
+    }
+}
