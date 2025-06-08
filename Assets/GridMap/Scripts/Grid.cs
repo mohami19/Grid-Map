@@ -1,9 +1,13 @@
 ﻿using System;
 using UnityEngine;
 using CodeMonkey.Utils;
+using Unity.VisualScripting;
 
 public class Grid
 {
+
+    public const int HEAT_MAP_MAX_VALUE = 100;
+    public const int HEAT_MAP_MIN_VALUE = 0;
 
     public event EventHandler<OnGridObjectChangedEventArgs> OnGridValueChanged;
     public class OnGridObjectChangedEventArgs : EventArgs
@@ -27,7 +31,7 @@ public class Grid
 
         gridArray = new int[width, height];
 
-        bool showDebug = false;
+        bool showDebug = true;
         if (showDebug)
         {
             TextMesh[,] debugTextArray = new TextMesh[width, height];
@@ -41,6 +45,13 @@ public class Grid
                     Debug.DrawLine(GetWorldPosition(x, y), GetWorldPosition(x + 1, y), Color.white, 100f);
                 }
             }
+            Debug.DrawLine(GetWorldPosition(0, height), GetWorldPosition(width, height), Color.white, 100f);
+            Debug.DrawLine(GetWorldPosition(width, 0), GetWorldPosition(width, height), Color.white, 100f);
+
+            OnGridValueChanged += (object sender, OnGridObjectChangedEventArgs eventArgs) =>
+            {
+                debugTextArray[eventArgs.x, eventArgs.y].text = gridArray[eventArgs.x, eventArgs.y].ToString();
+            };
         }
     }
 
@@ -77,7 +88,7 @@ public class Grid
             return;
         }
 
-        gridArray[x, y] = value;
+        gridArray[x, y] = Mathf.Clamp(value, HEAT_MAP_MIN_VALUE, HEAT_MAP_MAX_VALUE);
         if (OnGridValueChanged != null) OnGridValueChanged?.Invoke(this, new OnGridObjectChangedEventArgs { x = x, y = y });
     }
 
@@ -85,6 +96,11 @@ public class Grid
     {
         GetXY(worldPosition, out int x, out int y);
         SetValue(x, y, value);
+    }
+
+    public void AddValue(int x, int y, int value)
+    {
+        SetValue(x, y, GetValue(x, y) + value);
     }
 
     public int GetValue(int x, int y)
@@ -101,5 +117,32 @@ public class Grid
     {
         GetXY(worldPosition, out int x, out int y);
         return GetValue(x, y);
+    }
+
+    public void AddValue(Vector3 worldPostion, int value, int fullValueRange, int totalRange)
+    {
+        int lowerValueAmount = Mathf.RoundToInt((float)value / (totalRange - fullValueRange));
+
+        GetXY(worldPostion, out int originX, out int OriginY);
+        for (int x = 0; x < totalRange; x++)
+        {
+            for (int y = 0; y < totalRange - x; y++)
+            {
+                int radius = x + y;
+                int addValueAmount = value;
+                if (radius > fullValueRange)
+                {
+                    addValueAmount -= lowerValueAmount * (radius - fullValueRange);
+                }
+
+                AddValue(originX + x, OriginY + y, addValueAmount);
+
+                if (x != 0) AddValue(originX - x, OriginY + y, addValueAmount);
+
+                if (y != 0) AddValue(originX + x, OriginY - y, addValueAmount);
+
+                if (x != 0 && y != 0) AddValue(originX - x, OriginY - y, addValueAmount);
+            }
+        }
     }
 }

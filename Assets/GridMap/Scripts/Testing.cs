@@ -4,20 +4,24 @@ using CodeMonkey.Utils;
 public class Testing : MonoBehaviour
 {
 
+    [SerializeField] private HeatMapVisual heatMapVisual;
     private Grid grid;
     private float mouseMoveTimer;
     private float mouseMoveTimerMax = .01f;
 
     private void Start()
     {
-        grid = new Grid(100, 100, 10f, new Vector3(-500, -500));
+        grid = new Grid(100, 100, 4f, new Vector3(-200, -200));
 
-        HeatMapVisual heatMapVisual = new HeatMapVisual(grid, GetComponent<MeshFilter>());
+        heatMapVisual.SetGrid(grid);
+
     }
 
     private void Update()
     {
-        HandleHeatMapMouseMove();
+        HandleClickToModifyGrid();
+
+        // HandleHeatMapMouseMove();
 
         if (Input.GetMouseButtonDown(1))
         {
@@ -29,7 +33,8 @@ public class Testing : MonoBehaviour
     {
         if (Input.GetMouseButtonDown(0))
         {
-            grid.SetValue(UtilsClass.GetMouseWorldPosition(), 1);
+            Vector3 position = UtilsClass.GetMouseWorldPosition();
+            grid.AddValue(position, 100, 5, 40);
         }
     }
 
@@ -42,57 +47,5 @@ public class Testing : MonoBehaviour
             int gridValue = grid.GetValue(UtilsClass.GetMouseWorldPosition());
             grid.SetValue(UtilsClass.GetMouseWorldPosition(), gridValue + 1);
         }
-    }
-
-
-    private class HeatMapVisual
-    {
-
-        private Grid grid;
-        private Mesh mesh;
-
-        public HeatMapVisual(Grid grid, MeshFilter meshFilter)
-        {
-            this.grid = grid;
-
-            mesh = new Mesh();
-            meshFilter.mesh = mesh;
-
-            UpdateHeatMapVisual();
-
-            grid.OnGridValueChanged += Grid_OnGridValueChanged;
-        }
-
-        private void Grid_OnGridValueChanged(object sender, System.EventArgs e)
-        {
-            UpdateHeatMapVisual();
-        }
-
-        public void UpdateHeatMapVisual()
-        {
-
-            MeshUtils.CreateEmptyMeshArrays(grid.GetWidth() * grid.GetHeight(), out Vector3[] vertices,
-                    out Vector2[] uv, out int[] triangles);
-
-            for (int x = 0; x < grid.GetWidth(); x++)
-            {
-                for (int y = 0; y < grid.GetHeight(); y++)
-                {
-                    int index = x * grid.GetHeight() + y;
-                    Vector3 baseSize = new Vector3(1, 1) * grid.GetCellSize();
-                    int gridValue = grid.GetValue(x, y);
-                    int maxGridValue = 100;
-                    float gridValueNormalized = Mathf.Clamp01((float)gridValue / maxGridValue);
-                    Vector2 gridCellUV = new Vector2(gridValueNormalized, 0f);
-                    MeshUtils.AddToMeshArrays(vertices, uv, triangles, index,
-                                grid.GetWorldPosition(x, y) + baseSize * .5f, 0f, baseSize, gridCellUV, gridCellUV);
-                }
-            }
-
-            mesh.vertices = vertices;
-            mesh.uv = uv;
-            mesh.triangles = triangles;
-        }
-
     }
 }
