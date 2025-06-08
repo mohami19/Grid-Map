@@ -5,28 +5,25 @@ public class Testing : MonoBehaviour
 {
 
     [SerializeField] private HeatMapVisual heatMapVisual;
-    private Grid grid;
-    private float mouseMoveTimer;
-    private float mouseMoveTimerMax = .01f;
+    [SerializeField] private HeatMapBoolVisual heatMapBoolVisual;
+    [SerializeField] private HeatMapGenericVisual heatMapGenericVisual;
+
+    private Grid<HeatMapGridObject> grid;
 
     private void Start()
     {
-        grid = new Grid(100, 100, 4f, new Vector3(-200, -200));
+        grid = new Grid<HeatMapGridObject>(20, 10, 10f, new Vector3(0, 0),
+                    (Grid<HeatMapGridObject> g, int x, int y) => new HeatMapGridObject(g, x, y));
 
-        heatMapVisual.SetGrid(grid);
-
+        // heatMapVisual.SetGrid(grid);
+        // heatMapBoolVisual.SetGrid(grid);
+        heatMapGenericVisual.SetGrid(grid);
     }
 
     private void Update()
     {
         HandleClickToModifyGrid();
 
-        // HandleHeatMapMouseMove();
-
-        if (Input.GetMouseButtonDown(1))
-        {
-            Debug.Log(grid.GetValue(UtilsClass.GetMouseWorldPosition()));
-        }
     }
 
     private void HandleClickToModifyGrid()
@@ -34,18 +31,48 @@ public class Testing : MonoBehaviour
         if (Input.GetMouseButtonDown(0))
         {
             Vector3 position = UtilsClass.GetMouseWorldPosition();
-            grid.AddValue(position, 100, 5, 40);
+            HeatMapGridObject heatMapGridObject = grid.GetGridObject(position);
+            if (heatMapGridObject != null)
+            {
+                heatMapGridObject.AddValue(5);
+            }
         }
     }
 
-    private void HandleHeatMapMouseMove()
+}
+
+
+public class HeatMapGridObject
+{
+    public const int MAX = 100;
+    public const int MIN = 0;
+
+    private Grid<HeatMapGridObject> grid;
+    int x;
+    int y;
+    public int value;
+
+    public HeatMapGridObject(Grid<HeatMapGridObject> grid, int x, int y)
     {
-        mouseMoveTimer -= Time.deltaTime;
-        if (mouseMoveTimer < 0f)
-        {
-            mouseMoveTimer += mouseMoveTimerMax;
-            int gridValue = grid.GetValue(UtilsClass.GetMouseWorldPosition());
-            grid.SetValue(UtilsClass.GetMouseWorldPosition(), gridValue + 1);
-        }
+        this.grid = grid;
+        this.x = x;
+        this.y = y;
+    }
+
+    public void AddValue(int addValue)
+    {
+        value += addValue;
+        value = Mathf.Clamp(value, MIN, MAX);
+        grid.TriggerGridObjectChanged(x, y);
+    }
+
+    public float GetValueNormalized()
+    {
+        return (float)value / MAX;
+    }
+
+    public override string ToString()
+    {
+        return value.ToString();
     }
 }
